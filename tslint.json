@@ -1,0 +1,14 @@
+{
+  "extends": "tslint-config-airbnb",
+  "rules": {
+    "trailing-comma": false,
+    "object-literal-shorthand": false,
+    "no-trailing-whitespace": [
+      true,
+      "skip-blank-lines"
+    ],
+    "no-increment-decrement": {
+      "allowForLoopAfterthoughts": true
+    }
+  }
+}
