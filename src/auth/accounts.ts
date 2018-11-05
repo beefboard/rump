@@ -12,6 +12,15 @@ interface RegisterDetails {
   email: string;
 }
 
+export interface User {
+  username: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  admin: boolean;
+}
+
 /**
  * Login to the account, returning the auth token
  */
@@ -43,7 +52,7 @@ export async function login(username: string, password: string): Promise<string 
 }
 
 export async function register(details: RegisterDetails): Promise<boolean> {
-  const user: db.User = {
+  const user: db.UserDetails = {
     username: details.username.toLowerCase(),
     passwordHash: await bcrypt.hash(details.password, 10),
     firstName: details.firstName,
@@ -99,7 +108,7 @@ export async function getUser(username: string) {
     lastName: details.lastName,
     email: details.email,
     admin: details.admin
-  };
+  } as User;
 }
 
 export async function clearUsers() {

@@ -2,7 +2,7 @@ import knex from 'knex';
 import bcrypt from 'bcrypt';
 import uuidParse from 'uuid-parse';
 
-export interface User {
+export interface UserDetails {
   username: string;
   passwordHash: string;
   firstName: string;
@@ -108,7 +108,7 @@ export async function initDb() {
   await generateSessionsTable();
 }
 
-export async function getDetails(username: string): Promise<User | null> {
+export async function getDetails(username: string): Promise<UserDetails | null> {
   const detailsRow = await db.select().from(TABLE_USERS).where('username', username).first();
   if (!detailsRow) {
     return null;
@@ -124,7 +124,7 @@ export async function getDetails(username: string): Promise<User | null> {
   };
 }
 
-export async function saveUser(user: User) {
+export async function saveUser(user: UserDetails) {
   if (await db.select('username').from(TABLE_USERS).where('username', user.username).first()) {
     return false;
   }

@@ -4,7 +4,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import * as session from './session';
-import { initDb } from './data/db/db';
+import { initDb } from './auth/db/db';
 import v1 from './routes/v1';
 
 const app = express();

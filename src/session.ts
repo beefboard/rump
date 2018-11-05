@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as accounts from './data/accounts';
+import * as accounts from './auth/accounts';
 
 export async function decoder(req: Request, _: Response, next: NextFunction) {
   const token = req.headers['x-access-token'] as string;

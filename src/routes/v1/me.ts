@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { guard } from '../../session';
-import * as accounts from '../../data/accounts';
+import * as accounts from '../../auth/accounts';
 
 const router = Router();
 

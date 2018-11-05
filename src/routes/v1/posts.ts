@@ -1,23 +1,27 @@
 import { Router, Response } from 'express';
 import * as posts from '../../backend/v1/posts';
 import { guard, adminGuard } from '../../session';
-import { AuthSession } from '../../data/db/db';
+import { AuthSession } from '../../auth/db/db';
 import multer from 'multer';
 import fs from 'fs';
 import * as images from '../../backend/v1/images';
 
 // Create a place to temp store uploaded files
-const UPLOAD_DIR = `${__dirname}/../../tmpimages`;
+const UPLOAD_DIR = process.env.IMG_STORE || `${__dirname}/../../../tmpimages`;
 try {
   fs.mkdirSync(UPLOAD_DIR);
 } catch (_) {}
 
+const ONE_MB = 1024 * 1024;
+const MAX_FILE_SIZE = process.env.MAX_IMG_SIZE || ONE_MB;
+const MAX_IMAGES = 5;
+
 const upload = multer({
-  dest: UPLOAD_DIR ,
+  dest: UPLOAD_DIR,
   fileFilter: (_, file, next) => {
     const type = file.mimetype;
     const typeArray = type.split('/');
-    next(null, typeArray[0] === 'image');
+    next(null, typeArray[0] === 'image' && file.size < MAX_FILE_SIZE);
   }
 });
 
@@ -46,7 +50,7 @@ router.get('/', async (req, res) => {
   // If the user has requested for unapproved posts
   if (query && query.approved != null && query.approved === false) {
     // The user is not admin, so return none
-    if (!session || session.admin === false) {
+    if (!session || !session.admin) {
       return res.send({ posts: [] });
     }
   }
@@ -107,7 +111,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-router.post('/', upload.array('images'), async (req, res) => {
+router.post('/', upload.array('images', MAX_IMAGES), async (req, res) => {
   const session = req.session as AuthSession;
 
   const title = req.body.title;
@@ -130,7 +134,10 @@ router.post('/', upload.array('images'), async (req, res) => {
       author: author,
       numImages: imagePaths.length
     });
-    await images.uploadImages(id, imagePaths);
+    // Only upload images if we have any
+    if (imagePaths.length > 0) {
+      await images.uploadImages(id, imagePaths);
+    }
   } catch (e) {
     handleError(e, res);
   }

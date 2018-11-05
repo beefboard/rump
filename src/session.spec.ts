@@ -1,7 +1,7 @@
 import * as session from './session';
-import * as accounts from './data/accounts';
+import * as accounts from './auth/accounts';
 
-import { initDb } from './data/db/db';
+import { initDb } from './auth/db/db';
 import { mockRes, mockReq } from 'sinon-express-mock';
 
 beforeAll(async () => {

@@ -1,5 +1,5 @@
 import * as accounts from './accounts';
-import { AuthSession, User, initDb } from './db/db';
+import { UserDetails, initDb } from './db/db';
 
 beforeAll(async () => {
   await initDb();
@@ -151,6 +151,21 @@ describe('registration', () => {
 
     expect(await accounts.register(user)).toBe(false);
   });
+
+  test('users should not be admin on registration', async () => {
+    expect.assertions(1);
+    const user = {
+      username: 'lOweRCase',
+      password: 'test2',
+      firstName: 'test5',
+      lastName: 'test6',
+      email: 'test3@test.com'
+    };
+    await accounts.register(user);
+
+    const account = await accounts.getUser(user.username) as accounts.User;
+    expect(account.admin).toBeFalsy();
+  });
 });
 
 describe('retrieval', () => {
@@ -196,7 +211,7 @@ describe('retrieval', () => {
     };
     await accounts.register(user);
 
-    const details = (await accounts.getUser('lowercase')) as User;
+    const details = (await accounts.getUser('lowercase')) as any;
     expect(details.passwordHash).not.toBe(expect.anything());
   });
 
