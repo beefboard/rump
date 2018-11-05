@@ -14,7 +14,7 @@ try {
 
 const upload = multer({
   dest: UPLOAD_DIR ,
-  fileFilter: (req, file, next) => {
+  fileFilter: (_, file, next) => {
     const type = file.mimetype;
     const typeArray = type.split('/');
     next(null, typeArray[0] === 'image');
@@ -84,7 +84,7 @@ router.delete('/:id', async (req, res) => {
     res.send({ success: true });
   } catch (e) {
     console.error(e);
-    res.status(500).send({ error: 'Internal error' });
+    res.status(500).send({ error: 'Internal server error' });
   }
 });
 
@@ -114,7 +114,7 @@ router.post('/', upload.array('images'), async (req, res) => {
     await images.uploadImages(id, imagePaths);
   } catch (e) {
     console.error(e);
-    res.status(500).send({ error: 'Internal error' });
+    res.status(500).send({ error: 'Internal server error' });
   }
 });
 
