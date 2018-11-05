@@ -10,13 +10,15 @@ export async function uploadImages(postId: string, imagePaths: string[]) {
     imageAttachments.push(fs.createReadStream(path));
   }
 
-  await requestPromise.post(`${IMAGES_API}/v1/images`, {
-    formData: {
-      id: postId,
-      images: imageAttachments
-    },
-    json: true
-  });
+  return (
+    await requestPromise.post(`${IMAGES_API}/v1/images`, {
+      formData: {
+        id: postId,
+        images: imageAttachments
+      },
+      json: true
+    })
+  ).success;
 }
 
 export async function deleteImages(postId: string) {

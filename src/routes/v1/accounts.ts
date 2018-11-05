@@ -34,7 +34,7 @@ router.post('/', async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).send({
-      error: 'Internal error'
+      error: 'Internal server error'
     });
   }
 });
@@ -57,7 +57,7 @@ router.get('/:username', async (req, res) => {
     res.send(details);
   } catch (e) {
     console.error(e);
-    res.status(500).send({ error: 'Internal error' });
+    res.status(500).send({ error: 'Internal server error' });
   }
 });
 

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import * as posts from '../../backend/v1/posts';
 import { guard, adminGuard } from '../../session';
 import { AuthSession } from '../../data/db/db';
@@ -23,6 +23,22 @@ const upload = multer({
 
 const router = Router();
 
+function handleError(e: any, res: Response) {
+  console.error(e);
+  if (e.statusCode) {
+    res.status(e.statusCode);
+    if (e.response && e.response.body) {
+      res.send(e.response.body);
+    } else {
+      res.end();
+    }
+  } else {
+    res.status(500).send({
+      error: 'Internal server error'
+    });
+  }
+}
+
 router.get('/', async (req, res) => {
   const session = req.session;
   const query = req.query as posts.PostsQuery;
@@ -34,7 +50,12 @@ router.get('/', async (req, res) => {
       return res.send({ posts: [] });
     }
   }
-  posts.forwardGetPosts(query, res);
+  try {
+    const postsList = await posts.getPosts(query);
+    res.send({ posts: postsList });
+  } catch (e) {
+    handleError(e, res);
+  }
 });
 
 router.get('/:id', async (req, res) => {
@@ -51,8 +72,7 @@ router.get('/:id', async (req, res) => {
     }
     res.send(post);
   } catch (e) {
-    console.error(e);
-    return res.status(500).send({ error: 'Internal server error' });
+    handleError(e, res);
   }
 });
 
@@ -83,8 +103,7 @@ router.delete('/:id', async (req, res) => {
     await images.deleteImages(postId);
     res.send({ success: true });
   } catch (e) {
-    console.error(e);
-    res.status(500).send({ error: 'Internal server error' });
+    handleError(e, res);
   }
 });
 
@@ -113,13 +132,32 @@ router.post('/', upload.array('images'), async (req, res) => {
     });
     await images.uploadImages(id, imagePaths);
   } catch (e) {
-    console.error(e);
-    res.status(500).send({ error: 'Internal server error' });
+    handleError(e, res);
   }
 });
 
 router.use(adminGuard);
 
-router.use('*', posts.forwardRequest);
+router.put('/:id/approved', async (req, res) => {
+  const postId = req.params.id;
+  const approved = req.body.approved === 'true';
+
+  try {
+    await posts.setPostApproval(postId, approved);
+  } catch (e) {
+    handleError(e, res);
+  }
+});
+
+router.put('/:id/pinned', async (req, res) => {
+  const postId = req.params.id;
+  const pinned = req.body.pinned === 'true';
+
+  try {
+    await posts.setPostPinned(postId, pinned);
+  } catch (e) {
+    handleError(e, res);
+  }
+});
 
 export default router;

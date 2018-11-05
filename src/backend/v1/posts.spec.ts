@@ -1,15 +1,9 @@
 import * as posts from './posts';
-import { mockReq, mockRes } from 'sinon-express-mock';
 import nock from 'nock';
-import flushPromises from 'flush-promises';
-
-// tslint:disable-next-line:variable-name
-const MockExpressRequest = require('mock-express-request');
-const { WritableMock } = require('stream-mock');
 
 describe('v1/posts', () => {
-  describe('forwardGetPosts', () => {
-    it('should foward the request with the given query', (done) => {
+  describe('getPosts', () => {
+    it('should request posts with the given query', async () => {
       const query = { approved: false };
       nock(posts.POSTS_API)
         .get('/v1/posts')
@@ -17,36 +11,12 @@ describe('v1/posts', () => {
         .reply(200, {
           posts: []
         });
-      const response = new WritableMock();
 
-      posts.forwardGetPosts(query, response as any);
-      response.on('finish', () => {
-        expect(response.data.toString()).toEqual(JSON.stringify({ posts: [] }));
-        done();
-      });
-
-      // We will only respond when the query is equal to
-      // the one given
-      const query2 = { approved: true };
-      const responseData = { posts: [
-        { title: 'test', content: 'test', author: 'test' }
-      ]};
-
-      nock(posts.POSTS_API)
-        .get('/v1/posts')
-        .query(query2)
-        .reply(200, responseData);
-
-      const response2 = new WritableMock();
-
-      posts.forwardGetPosts(query2, response2 as any);
-      response2.on('finish', () => {
-        expect(response2.data.toString()).toEqual(JSON.stringify(responseData));
-        done();
-      });
+      const response = await posts.getPosts(query);
+      expect(response).toEqual([]);
     });
 
-    it('should respond with any errors from posts api', (done) => {
+    it('should throw an error on bad response', async () => {
       const query = { approved: false };
       nock(posts.POSTS_API)
         .get('/v1/posts')
@@ -54,28 +24,32 @@ describe('v1/posts', () => {
         .reply(422, {
           error: 'Bad query'
         });
-      const response = new WritableMock();
 
-      posts.forwardGetPosts(query, response as any);
-      response.on('finish', () => {
-        expect(response.data.toString()).toEqual(JSON.stringify({ error: 'Bad query' }));
-        done();
-      });
+      let thrown = null;
+      try {
+        await posts.getPosts(query);
+      } catch (e) {
+        thrown = e;
+      }
+
+      expect(thrown).not.toBe(null);
     });
 
-    it('should respond 500 on error', async () => {
-      const query = { approved: false };
-      const res = mockRes();
+    it('should should return posts list', async () => {
+      // We will only respond when the query is equal to
+      // the one given
+      const query = { approved: true };
+      const responseData = { posts: [
+        { title: 'test', content: 'test', author: 'test' }
+      ]};
 
-      try {
-        posts.forwardGetPosts(query, res);
-      } catch (e) {
-        // If an error is thrown, check that we were expecting that error (in tests)
-        expect(e.message).toBe('dest.on is not a function');
-      }
-      await flushPromises();
-      expect(res.status.calledWith(500)).toBe(true);
-      expect(res.send.calledWith({ error: 'Internal server error' })).toBe(true);
+      nock(posts.POSTS_API)
+        .get('/v1/posts')
+        .query(query)
+        .reply(200, responseData);
+
+      const response = await posts.getPosts(query);
+      expect(response).toEqual(responseData.posts);
     });
   });
 
@@ -175,55 +149,133 @@ describe('v1/posts', () => {
 
     it('should throw an error on failure', async () => {
       const postId = 'sdfasdf';
+      let thrown = null;
       try {
         await posts.deletePost(postId);
       } catch (e) {
-        expect(e.message).toContain('No match for request');
+        thrown = e;
       }
+      expect(thrown).not.toBe(null);
+      expect(thrown.message).toContain('No match for request');
     });
   });
 
-  describe('forwardRequest', async () => {
-    it('should forward any request to the posts api', (done) => {
+  describe('setPostPinned', async () => {
+    it('should send put request to the correct posts api', async () => {
       const postId = 'fsdfsd';
       const mockResponse = { success: true };
 
-      const req = new MockExpressRequest({
-        url: `${posts.POSTS_API}/v1/posts/asdkfjasdf/approved`,
-        method: 'PUT'
-      });
-
       nock(posts.POSTS_API)
-        .put('/v1/posts/asdkfjasdf/approved')
+        .put(`/v1/posts/${postId}/pinned`, { pinned: true })
         .reply(200, mockResponse);
 
-      const response = new WritableMock();
-
-      posts.forwardRequest(req, response as any);
-      response.on('finish', () => {
-        expect(response.data.toString()).toEqual(JSON.stringify(mockResponse));
-        done();
-      });
+      const success = await posts.setPostPinned(postId, true);
+      expect(success).toBe(true);
     });
 
-    it("should not throw an error if post doesn't exist", async () => {
+    it('should send the correct body in the request', async () => {
+      const postId = 'fsdfsd';
+      const mockResponse = { success: true };
+
+      nock(posts.POSTS_API)
+        .put(`/v1/posts/${postId}/pinned`, { pinned: false })
+        .reply(200, mockResponse);
+
+      const success = await posts.setPostPinned(postId, false);
+      expect(success).toBe(true);
+    });
+
+    it('should throw an error on bad request', async () => {
       const postId = 'fsdfsd';
       const mockResponse = { error: 'Not found' };
 
       nock(posts.POSTS_API)
-        .delete(`/v1/posts/${postId}`)
+        .put(`/v1/posts/${postId}/pinned`)
         .reply(404, mockResponse);
 
-      await posts.deletePost(postId);
+      let thrown = null;
+      try {
+        await posts.setPostPinned(postId, false);
+      } catch (e) {
+        thrown = e;
+      }
+
+      expect(thrown).not.toBe(null);
+      expect(thrown.statusCode).toBe(404);
+      expect(thrown.response.body).toEqual(mockResponse);
     });
 
-    it('should throw an error on failure', async () => {
-      const postId = 'sdfasdf';
+    it('should thrown an error on connection failure', async () => {
+      const postId = 'fsdfsd';
+
+      let thrown = null;
       try {
-        await posts.deletePost(postId);
+        await posts.setPostPinned(postId, false);
       } catch (e) {
-        expect(e.message).toContain('No match for request');
+        thrown = e;
       }
+
+      expect(thrown).not.toBe(null);
+      expect(thrown.statusCode).toBe(undefined);
+    });
+  });
+
+  describe('setPostApproval', async () => {
+    it('should send put request to the correct posts api', async () => {
+      const postId = 'fsdfsd';
+      const mockResponse = { success: true };
+
+      nock(posts.POSTS_API)
+        .put(`/v1/posts/${postId}/approved`, { approved: true })
+        .reply(200, mockResponse);
+
+      const success = await posts.setPostApproval(postId, true);
+      expect(success).toBe(true);
+    });
+
+    it('should send the correct body in the request', async () => {
+      const postId = 'fsdfsd';
+      const mockResponse = { success: true };
+
+      nock(posts.POSTS_API)
+        .put(`/v1/posts/${postId}/approved`, { approved: false })
+        .reply(200, mockResponse);
+
+      const success = await posts.setPostApproval(postId, false);
+      expect(success).toBe(true);
+    });
+
+    it('should throw an error on bad request', async () => {
+      const postId = 'fsdfsd';
+      const mockResponse = { error: 'Not found' };
+
+      nock(posts.POSTS_API)
+        .put(`/v1/posts/${postId}/approved`)
+        .reply(404, mockResponse);
+
+      let thrown = null;
+      try {
+        await posts.setPostApproval(postId, false);
+      } catch (e) {
+        thrown = e;
+      }
+
+      expect(thrown).not.toBe(null);
+      expect(thrown.statusCode).toBe(404);
+    });
+
+    it('should thrown an error on connection failure', async () => {
+      const postId = 'fsdfsd';
+
+      let thrown = null;
+      try {
+        await posts.setPostApproval(postId, false);
+      } catch (e) {
+        thrown = e;
+      }
+
+      expect(thrown).not.toBe(null);
+      expect(thrown.statusCode).toBe(undefined);
     });
   });
 });

@@ -14,7 +14,6 @@ router.get('/', (_, res) => {
     me: '/me',
     posts: '/posts',
     users: '/accounts',
-    images: '/images'
   });
 });
 

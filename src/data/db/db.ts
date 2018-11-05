@@ -26,9 +26,8 @@ export interface AuthSession {
 
 const TEST_MODE = process.env.NODE_ENV === 'test';
 
-const TABLE_USERS = 'users';
-const TABLE_SESSIONS = 'sessions';
-const TABLE_POSTS = 'posts';
+export const TABLE_USERS = 'users';
+export const TABLE_SESSIONS = 'sessions';
 
 const pgConnectionConfig = {
   host: process.env.PG_HOST || 'localhost',
@@ -37,7 +36,7 @@ const pgConnectionConfig = {
   database: process.env.PG_DB || 'test',
 };
 
-let db: knex;
+export let db: knex;
 
 function convertUuid(id: string) {
   return Buffer.from(uuidParse.parse(id));
@@ -68,20 +67,6 @@ async function generateSessionsTable() {
   }
 }
 
-async function generatePostsTable() {
-  if (!await db.schema.hasTable(TABLE_POSTS)) {
-    await db.schema.createTable(TABLE_POSTS, (table) => {
-      table.binary('id');
-      table.string('author');
-      table.dateTime('date');
-      table.string('title');
-      table.string('content');
-      table.boolean('approved');
-      table.boolean('pinned');
-    });
-  }
-}
-
 export async function generateInitialUsers() {
   const password = TEST_MODE ? 'test' : 'admin';
   const username = TEST_MODE ? 'test' : 'admin';
@@ -102,11 +87,7 @@ export async function clearUsers() {
 }
 
 export async function initDb() {
-  if (db) {
-    return;
-  }
-
-  if (TEST_MODE) {
+  if (process.env.NODE_ENV === 'test') {
     db = knex({
       client: 'sqlite3',
       connection: {
@@ -125,7 +106,6 @@ export async function initDb() {
   await generateUsersTable();
   await generateInitialUsers();
   await generateSessionsTable();
-  await generatePostsTable();
 }
 
 export async function getDetails(username: string): Promise<User | null> {
