@@ -119,8 +119,10 @@ router.post('/', upload.array('images', MAX_IMAGES), async (req, res) => {
   const author = session.username;
 
   const imagePaths = [];
-  for (const file of req.files as any[]) {
-    imagePaths.push(file.path);
+  if (req.files) {
+    for (const file of req.files as any[]) {
+      imagePaths.push(file.path);
+    }
   }
 
   if (!title || !content) {

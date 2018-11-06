@@ -173,6 +173,7 @@ describe('v1/images', () => {
 
       await flushPromises();
       expect(mockResponse.status.calledWith(500)).toBe(true);
+      expect(mockResponse.send.calledWith({ error: 'Internal server error' })).toBe(true);
     });
   });
 });

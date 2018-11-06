@@ -27,6 +27,13 @@ describe('login', () => {
     expect(token.length).toBeGreaterThan(0);
   });
 
+  it('should generate unque tokens for every login', async () => {
+    expect.assertions(1);
+    const token1 = (await accounts.login('test', 'test')) as string;
+    const token2 = (await accounts.login('test', 'test')) as string;
+    expect(token1).not.toBe(token2);
+  });
+
   it('should accept any case for username', async () => {
     expect.assertions(1);
 
