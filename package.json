@@ -27,7 +27,8 @@
     "pg": "^7.6.0",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
-    "source-map-support": "^0.5.9"
+    "source-map-support": "^0.5.9",
+    "uuid-parse": "^1.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^3.0.0",
@@ -60,8 +61,7 @@
     "tslint": "^5.11.0",
     "tslint-config-airbnb": "^5.11.0",
     "tsutils": "^3.2.0",
-    "typescript": "^3.1.6",
-    "uuid-parse": "^1.0.0"
+    "typescript": "^3.1.6"
   },
   "husky": {
     "hooks": {
