@@ -9,8 +9,7 @@
     "start": "ts-node -T src/server.ts",
     "build": "tsc --sourceMap true",
     "lint": "tslint --project .",
-    "watch": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node src/app.ts'",
-    "echo": "echo 'test'"
+    "watch": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node src/server.ts'"
   },
   "keywords": [],
   "author": "",

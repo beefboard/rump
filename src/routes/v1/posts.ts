@@ -28,7 +28,7 @@ const upload = multer({
 const router = Router();
 
 function handleError(e: any, res: Response) {
-  console.error(e);
+  console.error(e.message);
   if (e.statusCode) {
     res.status(e.statusCode);
     if (e.response && e.response.body) {
