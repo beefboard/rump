@@ -29,13 +29,11 @@ router.put('/', async (req, res) => {
   });
 });
 
-router.use(guard);
-
-router.get('/', async (req, res) => {
+router.get('/', guard, async (req, res) => {
   res.send(req.session);
 });
 
-router.delete('/', async (req, res) => {
+router.delete('/', guard, async (req, res) => {
   if (req.session) {
     await accounts.logout(req.session.token);
   }

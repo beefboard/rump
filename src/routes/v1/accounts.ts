@@ -61,6 +61,4 @@ router.get('/:username', async (req, res) => {
   }
 });
 
-router.use(adminGuard);
-
 export default router;
