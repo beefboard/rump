@@ -134,7 +134,7 @@ describe('v1/images', () => {
     });
   });
 
-  describe('forwardImages', async () => {
+  describe('forwardRequest', async () => {
     it('should forward image requests to image api', (done) => {
       const mockResponse = new WritableMock();
 

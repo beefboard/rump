@@ -1,13 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import * as accounts from './auth/accounts';
 
-export async function decoder(req: Request, _: Response, next: NextFunction) {
+export async function decoder(req: Request, res: Response, next: NextFunction) {
   const token = req.headers['x-access-token'] as string;
+  req.session = {};
 
   if (token != null) {
-    const session = await accounts.getSession(token);
-    if (session) {
-      req.session = session;
+    try {
+      const session = await accounts.getSession(token);
+      if (session) {
+        req.session = session;
+      }
+    } catch (e) {
+      console.error(e);
+      return res.status(500).send({
+        error: 'Internal server error'
+      });
     }
   }
 
@@ -15,7 +23,7 @@ export async function decoder(req: Request, _: Response, next: NextFunction) {
 }
 
 export async function guard(req: Request, res: Response, next: NextFunction) {
-  if (req.session && req.session.username) {
+  if (req.session.username) {
     return next();
   }
 
@@ -25,7 +33,7 @@ export async function guard(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function adminGuard(req: Request, res: Response, next: NextFunction) {
-  if (req.session && req.session.admin) {
+  if (req.session.admin) {
     return next();
   }
 

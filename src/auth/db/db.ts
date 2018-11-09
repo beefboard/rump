@@ -68,8 +68,8 @@ async function generateSessionsTable() {
 }
 
 export async function generateInitialUsers() {
-  const password = TEST_MODE ? 'test' : 'admin';
-  const username = TEST_MODE ? 'test' : 'admin';
+  const password = 'admin';
+  const username = 'admin';
 
   try {
     await db.insert({

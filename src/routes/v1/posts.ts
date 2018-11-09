@@ -48,7 +48,7 @@ router.get('/', async (req, res) => {
   const query = req.query as posts.PostsQuery;
 
   // If the user has requested for unapproved posts
-  if (query && query.approved != null && query.approved === false) {
+  if (query && query.approved != null && query.approved.toString() === 'false') {
     // The user is not admin, so return none
     if (!session || !session.admin) {
       return res.send({ posts: [] });
@@ -86,9 +86,7 @@ router.get('/:postId/images/:imageId', async (req, res) => {
   images.forwardRequest(postId, imageId, res);
 });
 
-router.use(guard);
-
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', guard, async (req, res) => {
   const session = req.session as AuthSession;
 
   const postId = req.params.id;
@@ -111,7 +109,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-router.post('/', upload.array('images', MAX_IMAGES), async (req, res) => {
+router.post('/', guard, upload.array('images', MAX_IMAGES), async (req, res) => {
   const session = req.session as AuthSession;
 
   const title = req.body.title;
@@ -145,9 +143,7 @@ router.post('/', upload.array('images', MAX_IMAGES), async (req, res) => {
   }
 });
 
-router.use(adminGuard);
-
-router.put('/:id/approved', async (req, res) => {
+router.put('/:id/approved', adminGuard, async (req, res) => {
   const postId = req.params.id;
   const approved = req.body.approved === 'true';
 
@@ -158,7 +154,7 @@ router.put('/:id/approved', async (req, res) => {
   }
 });
 
-router.put('/:id/pinned', async (req, res) => {
+router.put('/:id/pinned', adminGuard, async (req, res) => {
   const postId = req.params.id;
   const pinned = req.body.pinned === 'true';
 

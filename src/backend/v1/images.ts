@@ -60,13 +60,10 @@ export function forwardRequest(postId: string, imgId: number, res: Response) {
   const request = requestPromise.get(`${IMAGES_API}/v1/images/${postId}/${imgId}`);
   // Catch any promise errors
   request.then(() => {});
-  request.catch(() => {});
 
   // Any real request errors should throw internal server error
   request.on('error', (e) => {
     res.status(500).send({ error: 'Internal server error' });
   });
-
-  request.callback = () => {};
   request.pipe(res);
 }

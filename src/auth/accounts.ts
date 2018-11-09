@@ -75,22 +75,19 @@ export async function getSession(token: string): Promise<db.AuthSession | null> 
   if (session) {
     if (session.expiration > moment().toDate()) {
       const [details , _] = await Promise.all([
-        db.getDetails(session.username),
+        db.getDetails(session.username) as Promise<db.UserDetails>,
         db.storeSession(token, session.username, moment().add(2, 'weeks').toDate())
       ]);
 
-      if (details) {
-        return {
-          username: details.username.toLowerCase(),
-          firstName: details.firstName,
-          lastName: details.lastName,
-          admin: details.admin,
-          token: token
-        };
-      }
-    } else {
-      // TODO: Delete session as expired
+      return {
+        username: details.username.toLowerCase(),
+        firstName: details.firstName,
+        lastName: details.lastName,
+        admin: details.admin,
+        token: token
+      };
     }
+    await db.removeSession(token);
   }
   return null;
 }

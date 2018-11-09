@@ -1,43 +1,62 @@
 import * as accounts from './accounts';
-import { UserDetails, initDb } from './db/db';
+import mockdate from 'mockdate';
+import moment from 'moment';
+
+const db = require('./db/db');
 
 beforeAll(async () => {
-  await initDb();
+  await db.initDb();
 });
 
 describe('login', () => {
   it('should refuse invalid passwords', async () => {
     expect.assertions(1);
-    const token = await accounts.login('test', 'fail');
+    const token = await accounts.login('admin', 'fail');
 
-    expect(token).not.toBe(expect.anything());
+    expect(token).toBe(null);
   });
 
   it('should refuse invalid accounts', async () => {
     expect.assertions(1);
     const token = await accounts.login('sdfsadf', 'fail');
 
-    expect(token).not.toBe(expect.anything());
+    expect(token).toBe(null);
   });
 
   it('should create a token for valid credentials', async () => {
     expect.assertions(1);
-    const token = (await accounts.login('test', 'test')) as string;
+    const token = (await accounts.login('admin', 'admin')) as string;
 
+    expect(token.length).toBeGreaterThan(0);
+  });
+
+  it('should ensure tokens are not already being used', async () => {
+    expect.assertions(1);
+    const oldFunction = db.getSession;
+
+    // Cause get session to always return a session on the first call
+    // and not on a the second call
+    db.getSession = jest.fn().mockReturnValueOnce({
+      username: 'test'
+    });
+
+    const token = (await accounts.login('admin', 'admin')) as string;
+
+    db.getSession = oldFunction;
     expect(token.length).toBeGreaterThan(0);
   });
 
   it('should generate unque tokens for every login', async () => {
     expect.assertions(1);
-    const token1 = (await accounts.login('test', 'test')) as string;
-    const token2 = (await accounts.login('test', 'test')) as string;
+    const token1 = (await accounts.login('admin', 'admin')) as string;
+    const token2 = (await accounts.login('admin', 'admin')) as string;
     expect(token1).not.toBe(token2);
   });
 
   it('should accept any case for username', async () => {
     expect.assertions(1);
 
-    const token = (await accounts.login('TesT', 'test')) as string;
+    const token = (await accounts.login('AdmiN', 'admin')) as string;
 
     expect(token.length).toBeGreaterThan(0);
   });
@@ -47,7 +66,7 @@ describe('logout', async () => {
   it('should allow session to be deleted', async () => {
     expect.assertions(2);
 
-    const token = (await accounts.login('test', 'test')) as string;
+    const token = (await accounts.login('admin', 'admin')) as string;
 
     if (!token) {
       throw Error('Could not get token');
@@ -61,7 +80,7 @@ describe('logout', async () => {
 describe('session', async () => {
   it('should return session from token', async () => {
     expect.assertions(1);
-    const token = (await accounts.login('test', 'test')) as string;
+    const token = (await accounts.login('admin', 'admin')) as string;
     if (!token) {
       throw Error('Could not get token');
     }
@@ -70,10 +89,25 @@ describe('session', async () => {
     expect(session).toBeTruthy();
   });
 
+  it('should remove sessions which are out of date', async () => {
+    expect.assertions(1);
+    const token = (await accounts.login('admin', 'admin')) as string;
+    if (!token) {
+      throw Error('Could not get token');
+    }
+
+    mockdate.set(moment().add(3, 'weeks'));
+
+    const session = await accounts.getSession(token);
+    expect(session).toBe(null);
+
+    mockdate.reset();
+  });
+
   it('should store the username in the session', async () => {
     expect.assertions(1);
 
-    const token = await accounts.login('test', 'test');
+    const token = await accounts.login('admin', 'admin');
     if (!token) {
       throw Error('Could not get token');
     }
@@ -83,7 +117,7 @@ describe('session', async () => {
       throw Error('Could not get session from token');
     }
 
-    expect(session.username).toBe('test');
+    expect(session.username).toBe('admin');
   });
 });
 

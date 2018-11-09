@@ -1,6 +1,13 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { guard, adminGuard } from '../../session';
 import * as accounts from '../../auth/accounts';
+
+function handleError(error: any, res: Response) {
+  console.error(error);
+  res.status(500).send({
+    error: 'Internal server error'
+  });
+}
 
 const router = Router();
 
@@ -12,7 +19,7 @@ router.post('/', async (req, res) => {
   const email = req.body.email;
 
   if (!username || !password || !firstName || !lastName || !email) {
-    return res.status(422).send('Invalid data');
+    return res.status(422).send({ error: 'Invalid data' });
   }
 
   try {
@@ -32,15 +39,11 @@ router.post('/', async (req, res) => {
 
     res.send({ success: true });
   } catch (e) {
-    console.error(e);
-    res.status(500).send({
-      error: 'Internal server error'
-    });
+    handleError(e, res);
   }
 });
 
 router.get('/:username', async (req, res) => {
-  const session = req.session;
   const username = req.params.username;
 
   try {
@@ -50,14 +53,9 @@ router.get('/:username', async (req, res) => {
       return res.status(404).send({ error: 'Not found' });
     }
 
-    if (!session || !session.admin) {
-      delete details.email;
-    }
-
     res.send(details);
   } catch (e) {
-    console.error(e);
-    res.status(500).send({ error: 'Internal server error' });
+    handleError(e, res);
   }
 });
 

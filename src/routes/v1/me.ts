@@ -1,6 +1,13 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { guard } from '../../session';
 import * as accounts from '../../auth/accounts';
+
+function handleError(error: any, res: Response) {
+  console.error(error);
+  res.status(500).send({
+    error: 'Internal server error'
+  });
+}
 
 const router = Router();
 
@@ -13,33 +20,29 @@ router.put('/', async (req, res) => {
       error: 'username and password must be provided'
     });
   }
+  try {
+    const token = await accounts.login(username, password);
 
-  const token = await accounts.login(username, password);
+    if (!token) {
+      return res.status(401).send({
+        error: 'Unauthorised'
+      });
+    }
 
-  if (!token) {
-    res.status(401).send({
-      error: 'Unauthorised'
+    res.send({
+      token: token
     });
-
-    return;
+  } catch (e) {
+    handleError(e, res);
   }
-
-  res.send({
-    token: token
-  });
 });
 
-router.use(guard);
-
-router.get('/', async (req, res) => {
+router.get('/', guard, async (req, res) => {
   res.send(req.session);
 });
 
-router.delete('/', async (req, res) => {
-  if (req.session) {
-    await accounts.logout(req.session.token);
-  }
-
+router.delete('/', guard, async (req, res) => {
+  await accounts.logout(req.session.token);
   res.send({ success: true });
 });
 

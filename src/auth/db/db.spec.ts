@@ -25,6 +25,14 @@ describe('db', () => {
       expect(await db.db.schema.hasTable(db.TABLE_USERS)).toBe(true);
     });
 
+    it('should generate initial user', async () => {
+      await db.initDb();
+      expect(await db.db.table(db.TABLE_USERS)
+        .select('username')
+        .first()
+      ).toEqual({ username: 'admin' });
+    });
+
     it('should generate sessions table', async () => {
       await db.initDb();
       expect(await db.db.schema.hasTable(db.TABLE_SESSIONS)).toBe(true);
