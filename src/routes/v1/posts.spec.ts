@@ -344,7 +344,7 @@ describe('/v1/posts', () => {
       expect(images.uploadImages).toHaveBeenCalled();
     });
 
-    it('should return 200 on success', async () => {
+    it('should return post id on success', async () => {
       mockFs({
         '/image.png': 'content',
         '/image2.png': 'content',
@@ -358,6 +358,10 @@ describe('/v1/posts', () => {
         };
       });
 
+      posts.newPost.mockImplementation(() => {
+        return 'testid';
+      });
+
       const response = await supertest(app)
         .post('/v1/posts')
         .set('x-access-token', 'token')
@@ -367,7 +371,7 @@ describe('/v1/posts', () => {
         .attach('images', '/image2.png');
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ success: true });
+      expect(response.body).toEqual({ id: 'testid' });
     });
 
     it('should return 500 if image uploading fails', async () => {

@@ -24,8 +24,6 @@ export interface AuthSession {
   token: string;
 }
 
-const TEST_MODE = process.env.NODE_ENV === 'test';
-
 export const TABLE_USERS = 'users';
 export const TABLE_SESSIONS = 'sessions';
 
@@ -86,6 +84,12 @@ export async function clearUsers() {
   await db.delete().from(TABLE_USERS);
 }
 
+export async function generateTables() {
+  await generateUsersTable();
+  await generateInitialUsers();
+  await generateSessionsTable();
+}
+
 export async function initDb() {
   if (process.env.NODE_ENV === 'test') {
     db = knex({
@@ -103,9 +107,7 @@ export async function initDb() {
     });
   }
 
-  await generateUsersTable();
-  await generateInitialUsers();
-  await generateSessionsTable();
+  await generateTables();
 }
 
 export async function getDetails(username: string): Promise<UserDetails | null> {

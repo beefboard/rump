@@ -150,7 +150,7 @@ router.post('/', guard, (req, res) => {
         if (imagePaths.length > 0) {
           await images.uploadImages(id, imagePaths);
         }
-        res.send({ success: true });
+        res.send({ id: id });
       } catch (e) {
         handleError(e, res);
       }
