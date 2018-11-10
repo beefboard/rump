@@ -6,14 +6,19 @@ import multer from 'multer';
 import fs from 'fs';
 import * as images from '../../backend/v1/images';
 
+const autoReap = require('multer-autoreap');
+
 // Create a place to temp store uploaded files
-const UPLOAD_DIR = process.env.IMG_STORE || `${__dirname}/../../../tmpimages`;
+export const UPLOAD_DIR = process.env.IMG_STORE || `${__dirname}/../../../tmpimages`;
 try {
   fs.mkdirSync(UPLOAD_DIR);
 } catch (_) {}
 
-const ONE_MB = 1024 * 1024;
-const MAX_FILE_SIZE = process.env.MAX_IMG_SIZE || ONE_MB;
+const TEN_MB = 1024 * 1024 * 10;
+
+// Max file size is expected to be 10 MB, but
+// another custom size could also be used
+const MAX_FILE_SIZE = parseInt(process.env.MAX_IMG_SIZE || TEN_MB.toString(), 10);
 const MAX_IMAGES = 5;
 
 const upload = multer({
@@ -21,9 +26,12 @@ const upload = multer({
   fileFilter: (_, file, next) => {
     const type = file.mimetype;
     const typeArray = type.split('/');
-    next(null, typeArray[0] === 'image' && file.size < MAX_FILE_SIZE);
+    next(null, typeArray[0] === 'image');
+  },
+  limits: {
+    fileSize: MAX_FILE_SIZE
   }
-});
+}).array('images', MAX_IMAGES);
 
 const router = Router();
 
@@ -62,8 +70,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
-  const postId = req.params.id;
+router.get('/:postId', async (req, res) => {
+  const postId = req.params.postId;
   const session = req.session;
   try {
     const post = await posts.getPost(postId);
@@ -86,80 +94,89 @@ router.get('/:postId/images/:imageId', async (req, res) => {
   images.forwardRequest(postId, imageId, res);
 });
 
-router.delete('/:id', guard, async (req, res) => {
+router.delete('/:postId', guard, async (req, res) => {
   const session = req.session as AuthSession;
 
-  const postId = req.params.id;
+  const postId = req.params.postId;
   try {
     const post = await posts.getPost(postId);
     if (!post) {
-      return res.status(404);
+      return res.status(404).send({ error: 'Not found' });
     }
 
     // Cannot delete posts if you are not the owner, or you are not admin
-    if (post.author !== session.username && session.admin) {
+    if (post.author !== session.username && !session.admin) {
       return res.status(403).send({ error: 'Forbidden' });
     }
 
-    await posts.deletePost(postId);
-    await images.deleteImages(postId);
+    await Promise.all([
+      posts.deletePost(postId),
+      images.deleteImages(postId)
+    ]);
     res.send({ success: true });
   } catch (e) {
     handleError(e, res);
   }
 });
 
-router.post('/', guard, upload.array('images', MAX_IMAGES), async (req, res) => {
-  const session = req.session as AuthSession;
+router.post('/', guard, (req, res) => {
+  // Upload, but autoremove leftover
+  // files from disk
+  upload(req, res, (err) => {
+    autoReap(req, res, async () => {
+      if (err) {
+        return handleError(err, res);
+      }
+      const session = req.session as AuthSession;
 
-  const title = req.body.title;
-  const content = req.body.content;
-  const author = session.username;
+      const title = req.body.title;
+      const content = req.body.content;
+      const author = session.username;
 
-  const imagePaths = [];
-  if (req.files) {
-    for (const file of req.files as any[]) {
-      imagePaths.push(file.path);
-    }
-  }
+      const imagePaths = [];
+      for (const file of req.files as any[]) {
+        imagePaths.push(file.path);
+      }
 
-  if (!title || !content) {
-    return res.status(422).send({ error: 'Title and content must be provided' });
-  }
+      try {
+        const id = await posts.newPost({
+          title: title,
+          content: content,
+          author: author,
+          numImages: imagePaths.length
+        });
 
-  try {
-    const id = await posts.newPost({
-      title: title,
-      content: content,
-      author: author,
-      numImages: imagePaths.length
+        // Only upload images if we were given any
+        if (imagePaths.length > 0) {
+          await images.uploadImages(id, imagePaths);
+        }
+        res.send({ success: true });
+      } catch (e) {
+        handleError(e, res);
+      }
     });
-    // Only upload images if we have any
-    if (imagePaths.length > 0) {
-      await images.uploadImages(id, imagePaths);
-    }
+  });
+});
+
+router.put('/:postId/approved', adminGuard, async (req, res) => {
+  const postId = req.params.postId;
+  const approved = req.body.approved === true;
+
+  try {
+    const success = await posts.setPostApproval(postId, approved);
+    res.send({ success: success });
   } catch (e) {
     handleError(e, res);
   }
 });
 
-router.put('/:id/approved', adminGuard, async (req, res) => {
-  const postId = req.params.id;
-  const approved = req.body.approved === 'true';
+router.put('/:postId/pinned', adminGuard, async (req, res) => {
+  const postId = req.params.postId;
+  const pinned = req.body.pinned === true;
 
   try {
-    await posts.setPostApproval(postId, approved);
-  } catch (e) {
-    handleError(e, res);
-  }
-});
-
-router.put('/:id/pinned', adminGuard, async (req, res) => {
-  const postId = req.params.id;
-  const pinned = req.body.pinned === 'true';
-
-  try {
-    await posts.setPostPinned(postId, pinned);
+    const success = await posts.setPostPinned(postId, pinned);
+    res.send({ success: success });
   } catch (e) {
     handleError(e, res);
   }

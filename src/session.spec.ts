@@ -87,7 +87,7 @@ describe('decoder', () => {
 });
 
 describe('guard', () => {
-  it('should send 401 when session is defined', () => {
+  it('should send 401 when session is undefined', () => {
     expect.assertions(2);
     const expectedData = {
       error: 'Unauthorised'
