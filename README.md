@@ -2,6 +2,18 @@
 
 Beefboard's backend api gateway and auth service
 
+## Specifcation
+
+>Build a local news site where users can log in an post local news and events (including photos). As the items are added an email is sent to the site admin to approve them. Once approved they are displayed in a chronological list for people to browse. Users can then rate the items/journalist. Admin can flag/pin posts to force them to be displayed in a prominent location.
+
+
+- User login
+- Make post including photos
+- Posts require admin approval
+- Posts displayed in chronological order
+- Posts can be up/downvoted
+- Admin can pin posts to top
+
 ## About
 Sitting at the front of beefboard's backend API, rump is used as a gateway
 and authentication service. This service can identifiy users based on the given
@@ -20,7 +32,6 @@ send all image attachments to the post to the image store
 
 Rump also allows for querying of information in its auth database, which allows
 frontend applications to display information about users when requested.
-
 
 ## Development
 Development of rump is to be completed in typescript. The project
