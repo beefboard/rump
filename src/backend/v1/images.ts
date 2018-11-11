@@ -1,4 +1,5 @@
 import requestPromise from 'request-promise';
+import request from 'request';
 import fs from 'fs';
 import { promisify } from 'util';
 import { Response } from 'express';
@@ -11,7 +12,7 @@ async function attemptRemoval(path: string) {
   } catch (_) {}
 }
 
-export const IMAGES_API = process.env.IMAGES_API || 'https://localhost:3923';
+export const IMAGES_API = process.env.IMAGES_API || 'http://localhost:3293';
 
 /**
  * Upload the given image files, under the given post id
@@ -24,7 +25,7 @@ export async function uploadImages(postId: string, imagePaths: string[]) {
   }
   let error = null;
   try {
-    await requestPromise.put(`${IMAGES_API}/v1/images/${postId}`, {
+    await requestPromise.put(`${IMAGES_API}/v1/store/${postId}`, {
       formData: {
         images: imageAttachments
       },
@@ -48,7 +49,7 @@ export async function uploadImages(postId: string, imagePaths: string[]) {
 
 export async function deleteImages(postId: string) {
   try {
-    await requestPromise.delete(`${IMAGES_API}/v1/images/${postId}`);
+    await requestPromise.delete(`${IMAGES_API}/v1/store/${postId}`);
   } catch (e) {
     if (!e.statusCode || e.statusCode !== 404) {
       throw e;
@@ -57,13 +58,13 @@ export async function deleteImages(postId: string) {
 }
 
 export function forwardRequest(postId: string, imgId: number, res: Response) {
-  const request = requestPromise.get(`${IMAGES_API}/v1/images/${postId}/${imgId}`);
-  // Catch any promise errors
-  request.then(() => {});
+  const response = request.get(`${IMAGES_API}/v1/store/${postId}/${imgId}`, (err, res) => {});
+  // request.catch(() => {});
 
   // Any real request errors should throw internal server error
-  request.on('error', (e) => {
+  response.on('error', (e) => {
     res.status(500).send({ error: 'Internal server error' });
   });
-  request.pipe(res);
+
+  response.pipe(res);
 }

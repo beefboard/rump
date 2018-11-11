@@ -1,6 +1,6 @@
 import * as requestPromise from 'request-promise';
 
-export const POSTS_API = process.env.POSTS_API || 'http://localhost:2835';
+export const POSTS_API = process.env.POSTS_API || 'http://localhost:2833';
 
 interface Post {
   author: string;

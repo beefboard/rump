@@ -4,6 +4,7 @@ import { guard, adminGuard } from '../../session';
 import { AuthSession } from '../../auth/db/db';
 import multer from 'multer';
 import fs from 'fs';
+import mimeTypes from 'mime-types';
 import * as images from '../../backend/v1/images';
 
 const autoReap = require('multer-autoreap');
@@ -22,12 +23,18 @@ const MAX_FILE_SIZE = parseInt(process.env.MAX_IMG_SIZE || TEN_MB.toString(), 10
 const MAX_IMAGES = 5;
 
 const upload = multer({
-  dest: UPLOAD_DIR,
-  fileFilter: (_, file, next) => {
-    const type = file.mimetype;
-    const typeArray = type.split('/');
-    next(null, typeArray[0] === 'image');
+  fileFilter: (req, file, cb) => {
+    const extension = mimeTypes.extension(file.mimetype);
+    cb(null, extension !== false);
   },
+  storage: multer.diskStorage({
+    destination: UPLOAD_DIR,
+    filename: function (req, file, cb) {
+      const name = (Math.random()).toString(36).substring(7);
+      const extension = mimeTypes.extension(file.mimetype);
+      cb(null, `${name}-${Date.now()}.${extension}`);
+    }
+  }),
   limits: {
     fileSize: MAX_FILE_SIZE
   }

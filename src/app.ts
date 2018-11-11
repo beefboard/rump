@@ -12,6 +12,7 @@ app.use(cors());
 
 // Parse any body
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Decode token from session
 app.use(session.decoder);
