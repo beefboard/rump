@@ -141,7 +141,7 @@ describe('registration', () => {
     expect(token.length).toBeGreaterThan(0);
   });
 
-  it('should expect unique usernames', async () => {
+  it('should accept unique usernames', async () => {
     expect.assertions(2);
     const user1 = {
       username: 'test2',

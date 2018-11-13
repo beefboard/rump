@@ -23,13 +23,13 @@ const MAX_FILE_SIZE = parseInt(process.env.MAX_IMG_SIZE || TEN_MB.toString(), 10
 const MAX_IMAGES = 5;
 
 const upload = multer({
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_, file, cb) => {
     const extension = mimeTypes.extension(file.mimetype);
     cb(null, extension !== false);
   },
   storage: multer.diskStorage({
     destination: UPLOAD_DIR,
-    filename: function (req, file, cb) {
+    filename: function (_, file, cb) {
       const name = (Math.random()).toString(36).substring(7);
       const extension = mimeTypes.extension(file.mimetype);
       cb(null, `${name}-${Date.now()}.${extension}`);
