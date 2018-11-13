@@ -103,7 +103,8 @@ export async function initDb() {
   } else {
     db = knex({
       client: 'pg',
-      connection: pgConnectionConfig
+      connection: pgConnectionConfig,
+      pool: { min: 0, max: 10 }
     });
   }
 
