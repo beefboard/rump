@@ -21,6 +21,10 @@ export interface User {
   admin: boolean;
 }
 
+export interface UsersQuery {
+  admin?: string | boolean;
+}
+
 /**
  * Login to the account, returning the auth token
  */
@@ -108,6 +112,23 @@ export async function getUser(username: string) {
   } as User;
 }
 
+export async function getAdmins() {
+  const usersDetails = await db.queryUsers(true);
+
+  const users = [];
+  for (const details of usersDetails) {
+    users.push({
+      username: details.username,
+      firstName: details.firstName,
+      lastName: details.lastName,
+      email: details.email,
+      admin: details.admin
+    });
+  }
+
+  return users as User[];
+}
+
 export async function clearUsers() {
   await db.clearUsers();
   await db.generateInitialUsers();
@@ -115,6 +136,10 @@ export async function clearUsers() {
 
 export async function logout(token: string): Promise<boolean> {
   return await db.removeSession(token);
+}
+
+export async function setAdmin(username: string, admin: boolean) {
+  return await db.setAdmin(username.toLowerCase(), admin);
 }
 
 /**
