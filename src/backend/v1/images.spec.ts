@@ -49,10 +49,8 @@ describe('backend v1/images', () => {
         [filePath]: 'content'
       });
 
-      let parsedBody = null;
       nock(images.IMAGES_API)
         .put(`/v1/store/${postId}`, (body: any) => {
-          parsedBody = body;
           return body;
         })
         .reply(500, { error: 'Internal server error' });

@@ -1,6 +1,7 @@
 import knex from 'knex';
 import bcrypt from 'bcrypt';
 import uuidParse from 'uuid-parse';
+import { UsersQuery } from '../accounts';
 
 export interface UserDetails {
   username: string;
@@ -127,6 +128,24 @@ export async function getDetails(username: string): Promise<UserDetails | null> 
   };
 }
 
+export async function queryUsers(admin: boolean): Promise<UserDetails[]> {
+  const rows = await db.select().from(TABLE_USERS).where('admin', admin);
+  const users: UserDetails[] = [];
+
+  for (const row of rows) {
+    users.push({
+      passwordHash: row['password'],
+      username: row['username'],
+      firstName: row['firstName'],
+      lastName: row['lastName'],
+      email: row['email'],
+      admin: row['admin']
+    });
+  }
+
+  return users;
+}
+
 export async function saveUser(user: UserDetails) {
   if (await db.select('username').from(TABLE_USERS).where('username', user.username).first()) {
     return false;
@@ -142,6 +161,14 @@ export async function saveUser(user: UserDetails) {
   }).into(TABLE_USERS);
 
   return true;
+}
+
+export async function setAdmin(username: string, admin: boolean) {
+  return (
+    await db.update({ admin: admin })
+      .table(TABLE_USERS)
+      .where('username', username)
+  ) > 0;
 }
 
 export async function storeSession(token: string, username: string, expiration: Date) {

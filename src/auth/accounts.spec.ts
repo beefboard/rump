@@ -262,3 +262,63 @@ describe('retrieval', () => {
     expect(await accounts.getUser('asdfasdf')).toBe(null);
   });
 });
+
+describe('promotion', () => {
+  beforeEach(async () => {
+    await accounts.clearUsers();
+  });
+  it('should allow accounts to be promoted to admin', async () => {
+    const user = {
+      username: 'user1',
+      password: 'test2',
+      firstName: 'test5',
+      lastName: 'test6',
+      email: 'test3@test.com',
+    };
+    await accounts.register(user);
+    await accounts.setAdmin('user1', true);
+
+    const savedDetails = (await accounts.getUser('user1')) as any;
+    expect(savedDetails.admin).toBeTruthy();
+  });
+
+  it('should allow accounts to be demoted', async () => {
+    const user = {
+      username: 'user1',
+      password: 'test2',
+      firstName: 'test5',
+      lastName: 'test6',
+      email: 'test3@test.com',
+    };
+    await accounts.register(user);
+    await accounts.setAdmin('user1', true);
+    await accounts.setAdmin('user1', false);
+
+    const savedDetails = (await accounts.getUser('user1')) as any;
+    expect(savedDetails.admin).toBeFalsy();
+  });
+
+  it('should return false if the account does not exist', async () => {
+    expect(await accounts.setAdmin('user1', true)).toBe(false);
+  });
+});
+
+describe('query', () => {
+  it('should allow all admin accounts to be queried', async () => {
+    for (let i = 0; i < 10; i += 1) {
+      const user = {
+        username: `user${i}`,
+        password: 'test2',
+        firstName: 'test5',
+        lastName: 'test6',
+        email: 'test3@test.com',
+      };
+      await accounts.register(user);
+      if (i > 5) {
+        await accounts.setAdmin(user.username, true);
+      }
+    }
+
+    expect((await accounts.getAdmins()).length).toBe(5);
+  });
+});
