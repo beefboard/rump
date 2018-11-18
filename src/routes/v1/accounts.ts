@@ -60,11 +60,9 @@ router.get('/', async (req, res) => {
 
 router.get('/:username', async (req, res) => {
   const username = req.params.username;
-  console.log('test');
 
   try {
     const details = await accounts.getUser(username);
-    console.log(details);
 
     if (!details) {
       return res.status(404).send({ error: 'Not found' });

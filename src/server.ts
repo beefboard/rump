@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 2832;
     await initDb();
   } catch (e) {
     console.error(`Could not initialise database: ${e.message}`);
-    throw e;
+    return;
   }
   app.listen(PORT, async () => {
     console.log(`Rump listening on port ${PORT}`);

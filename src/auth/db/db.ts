@@ -44,12 +44,12 @@ function convertUuid(id: string) {
 async function generateUsersTable() {
   if (!await db.schema.hasTable(TABLE_USERS)) {
     await db.schema.createTable(TABLE_USERS, (table) => {
-      table.string('username');
-      table.string('password');
-      table.string('firstName');
-      table.string('lastName');
-      table.string('email');
-      table.boolean('admin');
+      table.string('username').notNullable();
+      table.string('password').notNullable();
+      table.string('firstName').notNullable();
+      table.string('lastName').notNullable();
+      table.string('email').notNullable();
+      table.boolean('admin').notNullable();
       table.primary(['username']);
     });
   }
@@ -58,9 +58,9 @@ async function generateUsersTable() {
 async function generateSessionsTable() {
   if (!await db.schema.hasTable(TABLE_SESSIONS)) {
     await db.schema.createTable(TABLE_SESSIONS, (table) => {
-      table.binary('token');
-      table.string('username');
-      table.dateTime('expiration');
+      table.binary('token').notNullable();
+      table.string('username').notNullable();
+      table.dateTime('expiration').notNullable();
       table.primary(['token']);
     });
   }
@@ -76,6 +76,7 @@ export async function generateInitialUsers() {
       password: await bcrypt.hash(password, 10),
       firstName: 'test',
       lastName: 'test',
+      email: 'freshollie@gmail.com',
       admin: true
     }).into('users');
   } catch (e) {}
