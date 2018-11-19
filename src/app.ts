@@ -8,7 +8,7 @@ import routes from './routes';
 
 const app = express();
 
-app.use(morgan('tiny'));
+// app.use(morgan('tiny'));
 // Allow for cross origin requests, as this is
 // an API
 app.use(cors());
