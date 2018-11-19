@@ -16,22 +16,13 @@ jest.mock('../../backend/v1/posts');
 const accounts = require('../../auth/accounts');
 jest.mock('../../auth/accounts');
 
+const votes = require('../../backend/v1/votes');
+jest.mock('../../backend/v1/votes');
+
 console.error = () => {};
 
 afterEach(() => {
   mockFs.restore();
-  posts.getPosts.mockReset();
-  posts.getPost.mockReset();
-  posts.setPostApproval.mockReset();
-  posts.setPostPinned.mockReset();
-  posts.newPost.mockReset();
-  posts.deletePost.mockReset();
-
-  accounts.getSession.mockReset();
-
-  images.forwardRequest.mockReset();
-  images.uploadImages.mockReset();
-  images.deleteImages.mockReset();
 });
 
 describe('/v1/posts', () => {
@@ -39,8 +30,15 @@ describe('/v1/posts', () => {
     it('should return posts from posts api with query', async () => {
       posts.getPosts.mockImplementation(() => {
         return [{
-          title: 'test'
+          title: 'test',
+          id: 'asdassdf'
         }];
+      });
+
+      votes.getGrades.mockImplementation(() => {
+        return {
+          asdassdf: { grade: 1 }
+        };
       });
 
       const mockQuery = {
@@ -52,9 +50,14 @@ describe('/v1/posts', () => {
         .query(mockQuery);
 
       expect(posts.getPosts).toHaveBeenCalledWith(mockQuery);
+      expect(votes.getGrades).toHaveBeenCalledWith(['asdassdf'], undefined);
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ posts:[{ title: 'test' }] });
+      expect(response.body).toEqual({
+        posts:[
+          { title: 'test', id: 'asdassdf', votes: { grade: 1 } }
+        ]
+      });
     });
 
     it('should not allow non-admins to query for unapproved', async () => {
@@ -88,6 +91,7 @@ describe('/v1/posts', () => {
     it('should allow admins to query unapproved posts', async () => {
       posts.getPosts.mockImplementation(() => {
         return [{
+          id: 'asdasd',
           title: 'test'
         }];
       });
@@ -96,6 +100,12 @@ describe('/v1/posts', () => {
         return {
           username: 'test',
           admin: true
+        };
+      });
+
+      votes.getGrades.mockImplementation(() => {
+        return {
+          asdasd: { grade: 1 }
         };
       });
 
@@ -108,8 +118,14 @@ describe('/v1/posts', () => {
         .set('x-access-token', 'safds')
         .query(mockQuery);
 
+      expect(votes.getGrades).toHaveBeenCalledWith(['asdasd'], 'test');
+
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ posts: [{ title: 'test' }] });
+      expect(response.body).toEqual({
+        posts: [
+          { title: 'test', id: 'asdasd', votes: { grade: 1 } }
+        ]
+      });
     });
 
     it('should respond 500 error when api fails', async () => {
@@ -121,6 +137,21 @@ describe('/v1/posts', () => {
         .get('/v1/posts');
 
       expect(response.status).toBe(500);
+
+      posts.getPosts.mockImplementation(() => {
+        return [{
+          id: 'test',
+        }];
+      });
+
+      votes.getGrades.mockImplementation(() => {
+        throw new Error('Error');
+      });
+
+      const response2 = await supertest(app)
+        .get('/v1/posts');
+
+      expect(response2.status).toBe(500);
     });
 
     it('should return the http error from the api', async () => {
@@ -141,18 +172,25 @@ describe('/v1/posts', () => {
   });
 
   describe('GET /:postId', () => {
-    it('should respond with details of the given post', async () => {
+    it('should respond with details of the given post and post votes', async () => {
       posts.getPost.mockImplementation(() => {
         return {
           title: 'test'
         };
       });
 
+      votes.getGrade.mockImplementation(() => {
+        return { grade: 1 };
+      });
+
       const response = await supertest(app)
         .get('/v1/posts/adfasdfj');
 
+      expect(posts.getPost).toHaveBeenCalledWith('adfasdfj');
+      expect(votes.getGrade).toHaveBeenCalledWith('adfasdfj', undefined);
+
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ title: 'test' });
+      expect(response.body).toEqual({ title: 'test', votes: { grade: 1 } });
     });
 
     it('should respond 404 for posts which don\'t exist', async () => {
@@ -201,6 +239,10 @@ describe('/v1/posts', () => {
         };
       });
 
+      votes.getGrade.mockImplementation(() => {
+        return { grade: 1 };
+      });
+
       accounts.getSession.mockImplementation(() => {
         return {
           username: 'test',
@@ -213,7 +255,36 @@ describe('/v1/posts', () => {
         .set('x-access-token', 'safds');
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ title: 'test', approved: false });
+      expect(response.body).toEqual({ title: 'test', approved: false, votes: { grade: 1 } });
+    });
+
+    it('should request post grade for username when logged in', async () => {
+      posts.getPost.mockImplementation(() => {
+        return {
+          title: 'test',
+          approved: false
+        };
+      });
+
+      votes.getGrade.mockImplementation(() => {
+        return { grade: 1 };
+      });
+
+      accounts.getSession.mockImplementation(() => {
+        return {
+          username: 'test',
+          admin: true
+        };
+      });
+
+      const response = await supertest(app)
+        .get('/v1/posts/sdfsadf')
+        .set('x-access-token', 'safds');
+
+      expect(votes.getGrade).toHaveBeenCalledWith('sdfsadf', 'test');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ title: 'test', approved: false, votes: { grade: 1 } });
     });
 
     it('should respond with a 500 error on api failure', async () => {
@@ -225,6 +296,15 @@ describe('/v1/posts', () => {
         .get('/v1/posts/sdfsadf');
 
       expect(response.status).toBe(500);
+
+      votes.getGrade.mockImplementation(() => {
+        throw new Error('Connection error');
+      });
+
+      const response2 = await supertest(app)
+        .get('/v1/posts/sdfsadf');
+
+      expect(response2.status).toBe(500);
     });
 
     it('should respond with any error received from api', async () => {
@@ -244,6 +324,120 @@ describe('/v1/posts', () => {
 
       expect(response.status).toBe(422);
       expect(response.body).toEqual({ error: 'Some error' });
+    });
+  });
+
+  describe('POST /:postId/votes', () => {
+    it('should respond with unauthorised for guests', async () => {
+      const response = await supertest(app)
+        .post('/v1/posts/adsfsda/votes')
+        .send({
+          grade: 1
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should add a grade to the postId', async () => {
+      votes.addGrade.mockImplementation(() => {
+        return true;
+      });
+
+      accounts.getSession.mockImplementation(() => {
+        return {
+          username: 'testsd'
+        };
+      });
+
+      const response = await supertest(app)
+        .post('/v1/posts/adsfsda/votes')
+        .set('x-access-token', 'token')
+        .send({
+          grade: 1
+        });
+
+      expect(votes.addGrade).toHaveBeenCalledWith('adsfsda', 'testsd', 1);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ success: true });
+    });
+
+    it('should respond with error from api', async () => {
+      votes.addGrade.mockImplementation(() => {
+        throw {
+          statusCode: 422,
+          response: {
+            body: {
+              error: 'An error'
+            }
+          }
+        };
+      });
+
+      accounts.getSession.mockImplementation(() => {
+        return {
+          username: 'testsd'
+        };
+      });
+
+      const response = await supertest(app)
+        .post('/v1/posts/adsfsda/votes')
+        .set('x-access-token', 'token')
+        .send({
+          grade: 1
+        });
+
+      expect(response.status).toBe(422);
+      expect(response.body).toEqual({ error: 'An error' });
+
+      votes.addGrade.mockImplementation(() => {
+        throw {
+          statusCode: 500,
+          response: {
+            body: {
+              error: 'Internal server error'
+            }
+          }
+        };
+      });
+
+      accounts.getSession.mockImplementation(() => {
+        return {
+          username: 'testsd'
+        };
+      });
+
+      const response2 = await supertest(app)
+        .post('/v1/posts/adsfsda/votes')
+        .set('x-access-token', 'token')
+        .send({
+          grade: 1
+        });
+
+      expect(response2.status).toBe(500);
+      expect(response2.body).toEqual({ error: 'Internal server error' });
+    });
+
+    it('should respond with 500 on internal error', async () => {
+      votes.addGrade.mockImplementation(() => {
+        throw new Error('Error');
+      });
+
+      accounts.getSession.mockImplementation(() => {
+        return {
+          username: 'testsd'
+        };
+      });
+
+      const response = await supertest(app)
+        .post('/v1/posts/adsfsda/votes')
+        .set('x-access-token', 'token')
+        .send({
+          grade: 1
+        });
+
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({ error: 'Internal server error' });
     });
   });
 
@@ -545,6 +739,7 @@ describe('/v1/posts', () => {
 
       posts.getPost.mockImplementation(() => {
         return {
+          id: 'asdfsdf',
           author: 'test',
           title: 'test3',
           content: 'test4'
@@ -568,6 +763,7 @@ describe('/v1/posts', () => {
 
       posts.getPost.mockImplementation(() => {
         return {
+          id: 'sdfsdaf',
           author: 'test',
           title: 'test3',
           content: 'test4'

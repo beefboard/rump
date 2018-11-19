@@ -6,6 +6,7 @@ import multer from 'multer';
 import fs from 'fs';
 import mimeTypes from 'mime-types';
 import * as images from '../../backend/v1/images';
+import * as votes from '../../backend/v1/votes';
 
 const autoReap = require('multer-autoreap');
 
@@ -71,6 +72,13 @@ router.get('/', async (req, res) => {
   }
   try {
     const postsList = await posts.getPosts(query);
+    const postIds = postsList.map((post: any) => post.id);
+
+    const postVotes = await votes.getGrades(postIds, req.session.username);
+
+    for (const post of postsList) {
+      post.votes = postVotes[post.id];
+    }
     res.send({ posts: postsList });
   } catch (e) {
     handleError(e, res);
@@ -80,8 +88,12 @@ router.get('/', async (req, res) => {
 router.get('/:postId', async (req, res) => {
   const postId = req.params.postId;
   const session = req.session;
+
   try {
-    const post = await posts.getPost(postId);
+    const [post, postVotes] = await Promise.all([
+      posts.getPost(postId),
+      votes.getGrade(postId, session.username)
+    ]);
     // Don't allow post to be seen if we are not admin
     // and it has not been approved
     if (!post || !session
@@ -89,7 +101,24 @@ router.get('/:postId', async (req, res) => {
           && post.author !== session.username)) {
       return res.status(404).send({ error: 'Not found' });
     }
+
+    post.votes = postVotes;
     res.send(post);
+  } catch (e) {
+    handleError(e, res);
+  }
+});
+
+router.post('/:postId/votes', guard, async (req, res) => {
+  const postId = req.params.postId;
+  const grade = req.body.grade;
+
+  try {
+    await votes.addGrade(postId, req.session.username, grade);
+
+    res.send({
+      success: true
+    });
   } catch (e) {
     handleError(e, res);
   }
