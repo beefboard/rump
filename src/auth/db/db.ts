@@ -1,7 +1,6 @@
 import knex from 'knex';
 import bcrypt from 'bcrypt';
 import uuidParse from 'uuid-parse';
-import { UsersQuery } from '../accounts';
 
 export interface UserDetails {
   username: string;

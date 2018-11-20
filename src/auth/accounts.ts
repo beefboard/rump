@@ -82,14 +82,18 @@ export async function getSession(token: string): Promise<db.AuthSession | null> 
         db.getDetails(session.username) as Promise<db.UserDetails>,
         db.storeSession(token, session.username, moment().add(2, 'weeks').toDate())
       ]);
+      if (details) {
+        return {
+          username: details.username.toLowerCase(),
+          firstName: details.firstName,
+          lastName: details.lastName,
+          admin: details.admin,
+          token: token
+        };
+      }
+      await db.removeSession(token);
 
-      return {
-        username: details.username.toLowerCase(),
-        firstName: details.firstName,
-        lastName: details.lastName,
-        admin: details.admin,
-        token: token
-      };
+      return null;
     }
     await db.removeSession(token);
   }

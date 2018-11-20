@@ -119,8 +119,25 @@ describe('session', async () => {
 
     expect(session.username).toBe('admin');
   });
-});
 
+  it('should delete session if user no longer exists', async () => {
+    await accounts.register({
+      username: 'test2',
+      password: 'test2',
+      email: 'test@test.com',
+      firstName: 'test',
+      lastName: 'test'
+    });
+
+    const token = (await accounts.login('test2', 'test2')) as string;
+    console.log(token);
+    await accounts.clearUsers();
+
+    const details = await accounts.getSession(token);
+    expect(details).toBe(null);
+  });
+
+});
 describe('registration', () => {
   beforeEach(async () => {
     await accounts.clearUsers();
