@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import * as posts from '../../backend/v1/posts';
 import { guard, adminGuard } from '../../session';
-import { AuthSession } from '../../auth/db/db';
+import { AuthSession } from '../../auth/accounts';
 import multer from 'multer';
 import fs from 'fs';
 import mimeTypes from 'mime-types';
