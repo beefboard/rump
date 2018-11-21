@@ -1,4 +1,4 @@
-import { AuthSession } from './auth/db/db';
+import { AuthSession } from './auth/accounts';
 
 declare global {
   namespace Express {

@@ -21,6 +21,15 @@ export interface User {
   admin: boolean;
 }
 
+export interface AuthSession {
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  admin: boolean;
+  token: string;
+}
+
 export interface UsersQuery {
   admin?: string | boolean;
 }
@@ -72,7 +81,7 @@ export async function register(details: RegisterDetails): Promise<boolean> {
   return await db.saveUser(user);
 }
 
-export async function getSession(token: string): Promise<db.AuthSession | null> {
+export async function getSession(token: string): Promise<AuthSession | null> {
   const session = await db.getSession(token);
 
   // If the session exists, and the session has not expiered extend the session
@@ -88,7 +97,8 @@ export async function getSession(token: string): Promise<db.AuthSession | null> 
           firstName: details.firstName,
           lastName: details.lastName,
           admin: details.admin,
-          token: token
+          token: token,
+          email: details.email
         };
       }
       await db.removeSession(token);

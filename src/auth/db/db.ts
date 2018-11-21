@@ -16,14 +16,6 @@ export interface SessionData {
   username: string;
 }
 
-export interface AuthSession {
-  username: string;
-  firstName: string;
-  lastName: string;
-  admin: boolean;
-  token: string;
-}
-
 export const TABLE_USERS = 'users';
 export const TABLE_SESSIONS = 'sessions';
 
