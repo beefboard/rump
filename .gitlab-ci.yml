@@ -90,7 +90,7 @@ deploy:
   dependencies:
     - test
   script:
-    ssh $DEPLOY_USER@$BEEFBOARD_HOST -c 'docker stack deploy -c /opt/web/docker-compose.yml web --with-registry-auth'
+    ssh $DEPLOY_USER@$BEEFBOARD_HOST 'docker stack deploy -c /opt/web/docker-compose.yml web --with-registry-auth'
   only:
     - master
     - development
