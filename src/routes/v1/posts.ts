@@ -74,10 +74,12 @@ router.get('/', async (req, res) => {
     const postsList = await posts.getPosts(query);
     const postIds = postsList.map((post: any) => post.id);
 
-    const postVotes = await votes.getGrades(postIds, req.session.username);
+    if (postIds.length > 0) {
+      const postVotes = await votes.getGrades(postIds, req.session.username);
 
-    for (const post of postsList) {
-      post.votes = postVotes[post.id];
+      for (const post of postsList) {
+        post.votes = postVotes[post.id];
+      }
     }
     res.send({ posts: postsList });
   } catch (e) {

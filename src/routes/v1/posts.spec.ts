@@ -128,6 +128,19 @@ describe('/v1/posts', () => {
       });
     });
 
+    it('should not get post votes when no posts exist', async () => {
+      posts.getPosts.mockImplementation(() => {
+        return [];
+      });
+
+      const response = await supertest(app)
+        .get('/v1/posts');
+
+      expect(response.body).toEqual({ posts: [] });
+
+      expect(votes.getGrades).not.toHaveBeenCalled();
+    });
+
     it('should respond 500 error when api fails', async () => {
       posts.getPosts.mockImplementation(() => {
         throw new Error('Connection errro');

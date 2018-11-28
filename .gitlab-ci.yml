@@ -9,15 +9,14 @@ stages:
 # http://docs.gitlab.com/ce/ci/yaml/README.html#cache
 cache:
   paths:
-  - node_modules/
-
+    - node_modules/
 
 test:
   stage: test
   script:
-   - npm install
-   - npm run lint
-   - npm test
+    - npm install
+    - npm run lint
+    - npm test
   artifacts:
     paths:
       - coverage/
@@ -88,7 +87,7 @@ deploy:
     # Ensure that the ssh is known
     - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
-    - ssh $DEPLOY_USER@$BEEFBOARD_HOST 'docker stack deploy -c /opt/web/docker-compose.yml web --with-registry-auth'
+    - ssh $DEPLOY_USER@$BEEFBOARD_HOST 'docker service update web_beefboard-ratings --with-registry-auth'
   only:
     - master
     - development
