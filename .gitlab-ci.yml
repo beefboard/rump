@@ -71,8 +71,12 @@ deploy:
     - eval $(ssh-agent -s)
 
     ##
-    - ssh-keyscan $BEEFBOARD_HOST >> ~/.ssh/known_hosts
-    - chmod 644 ~/.ssh/known_hosts
+    ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+    ## We're using tr to fix line endings which makes ed25519 keys work
+    ## without extra base64 encoding.
+    ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+    ##
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
 
     ##
     ## Create the SSH directory and give it the right permissions
@@ -80,8 +84,8 @@ deploy:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
 
-    # Ensure that the ssh is known
-    - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+    ##
+    - ssh-keyscan $BEEFBOARD_HOST >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
 
     - if [[ "$CI_COMMIT_REF_NAME"=="development" ]]; then SERVICE="web_beefboard-test-api"; else SERVICE="web_beefboard-api"; fi
