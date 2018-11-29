@@ -88,7 +88,7 @@ deploy:
     - command="docker service update ${SERVICE} --image ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_REF_NAME} --with-registry-auth"
     - echo $command
     - ssh $DEPLOY_USER@$BEEFBOARD_HOST "$command"
-    only:
+  only:
     - master
     - development
   
