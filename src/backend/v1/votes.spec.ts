@@ -107,7 +107,7 @@ describe('backend v1/votes', () => {
       const grade = -1;
 
       nock(votes.VOTES_API)
-        .post(`/v1/grades/${post}`, { user: user, grade: -1 })
+        .put(`/v1/grades/${post}`, { user: user, grade: -1 })
         .reply(200, {
           success: true
         });
@@ -122,7 +122,7 @@ describe('backend v1/votes', () => {
       const grade = 1;
 
       nock(votes.VOTES_API)
-        .post(`/v1/grades/${post}`, { user: user, grade: 1 })
+        .put(`/v1/grades/${post}`, { user: user, grade: 1 })
         .reply(200, {
           success: true
         });
@@ -137,7 +137,7 @@ describe('backend v1/votes', () => {
       const grade = 1;
 
       nock(votes.VOTES_API)
-        .post(`/v1/grades/${post}`, { user: user, grade: 1 })
+        .put(`/v1/grades/${post}`, { user: user, grade: 1 })
         .reply(500, {
           error: 'Internal server error'
         });

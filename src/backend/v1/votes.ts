@@ -25,7 +25,7 @@ export async function getGrade(postId: string, username?: string) {
 
 export async function addGrade(postId: string, username: string, grade: number) {
   return (await requestPromise
-    .post(
+    .put(
       `${VOTES_API}/v1/grades/${postId}`, {
         body: {
           user: username,
