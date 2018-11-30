@@ -24,7 +24,7 @@ test:
       - coverage/
 
 lint:
-  stage: lint
+  stage: test
   script:
     - npm run lint
   
