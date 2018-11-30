@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --coverage --verbose",
-    "jest": "jest",
+    "acceptence": "jest --config jest.acceptence.config.js acceptence.spec.ts",
     "start": "ts-node -T src/server.ts",
     "build": "tsc --sourceMap true",
     "lint": "tslint --project .",
