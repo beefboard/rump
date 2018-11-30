@@ -4,6 +4,7 @@ stages:
   - test
   - build
   - deploy
+  - acceptence
 
 # This folder is cached between builds
 # http://docs.gitlab.com/ce/ci/yaml/README.html#cache
@@ -88,7 +89,11 @@ deploy:
     - ssh-keyscan $BEEFBOARD_HOST >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
 
-    - if [[ "$CI_COMMIT_REF_NAME"=="development" ]]; then SERVICE="web_beefboard-test-api"; else SERVICE="web_beefboard-api"; fi
+    - if [[ "$CI_COMMIT_REF_NAME"=="development" ]]; then 
+        SERVICE="web_beefboard-test-api"; 
+      else 
+        SERVICE="web_beefboard-api"; 
+      fi
     - command="docker service update ${SERVICE} --image ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_REF_NAME} --with-registry-auth"
     - echo $command
     - ssh $DEPLOY_USER@$BEEFBOARD_HOST "$command"
@@ -96,3 +101,18 @@ deploy:
     - master
     - development
   
+acceptence:
+  stage: acceptence
+  dependencies:
+    - deploy
+  script:
+    # Run acceptence tests on the development server, or the production server
+    - if [[ "$CI_COMMIT_REF_NAME"=="development" ]]; then 
+        export ACCEPTENCE_SERVER="https://api.test.beefboard.mooo.com"; 
+      else 
+        export ACCEPTENCE_SERVER="https://api.beefboard.mooo.com"; 
+      fi
+    - npm run acceptence
+  only:
+    - master
+    - development
