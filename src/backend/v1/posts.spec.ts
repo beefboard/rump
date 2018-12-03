@@ -1,7 +1,7 @@
 import * as posts from './posts';
 import nock from 'nock';
 
-describe('v1/posts', () => {
+describe('backend v1/posts', () => {
   describe('getPosts', () => {
     it('should request posts with the given query', async () => {
       const query = { approved: false };

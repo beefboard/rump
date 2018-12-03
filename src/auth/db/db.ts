@@ -16,16 +16,6 @@ export interface SessionData {
   username: string;
 }
 
-export interface AuthSession {
-  username: string;
-  firstName: string;
-  lastName: string;
-  admin: boolean;
-  token: string;
-}
-
-const TEST_MODE = process.env.NODE_ENV === 'test';
-
 export const TABLE_USERS = 'users';
 export const TABLE_SESSIONS = 'sessions';
 
@@ -45,12 +35,12 @@ function convertUuid(id: string) {
 async function generateUsersTable() {
   if (!await db.schema.hasTable(TABLE_USERS)) {
     await db.schema.createTable(TABLE_USERS, (table) => {
-      table.string('username');
-      table.string('password');
-      table.string('firstName');
-      table.string('lastName');
-      table.string('email');
-      table.boolean('admin');
+      table.string('username').notNullable();
+      table.string('password').notNullable();
+      table.string('firstName').notNullable();
+      table.string('lastName').notNullable();
+      table.string('email').notNullable();
+      table.boolean('admin').notNullable();
       table.primary(['username']);
     });
   }
@@ -59,9 +49,9 @@ async function generateUsersTable() {
 async function generateSessionsTable() {
   if (!await db.schema.hasTable(TABLE_SESSIONS)) {
     await db.schema.createTable(TABLE_SESSIONS, (table) => {
-      table.binary('token');
-      table.string('username');
-      table.dateTime('expiration');
+      table.binary('token').notNullable();
+      table.string('username').notNullable();
+      table.dateTime('expiration').notNullable();
       table.primary(['token']);
     });
   }
@@ -77,6 +67,7 @@ export async function generateInitialUsers() {
       password: await bcrypt.hash(password, 10),
       firstName: 'test',
       lastName: 'test',
+      email: 'freshollie@gmail.com',
       admin: true
     }).into('users');
   } catch (e) {}
@@ -84,6 +75,12 @@ export async function generateInitialUsers() {
 
 export async function clearUsers() {
   await db.delete().from(TABLE_USERS);
+}
+
+export async function generateTables() {
+  await generateUsersTable();
+  await generateInitialUsers();
+  await generateSessionsTable();
 }
 
 export async function initDb() {
@@ -99,13 +96,12 @@ export async function initDb() {
   } else {
     db = knex({
       client: 'pg',
-      connection: pgConnectionConfig
+      connection: pgConnectionConfig,
+      pool: { min: 0, max: 10 }
     });
   }
 
-  await generateUsersTable();
-  await generateInitialUsers();
-  await generateSessionsTable();
+  await generateTables();
 }
 
 export async function getDetails(username: string): Promise<UserDetails | null> {
@@ -124,6 +120,24 @@ export async function getDetails(username: string): Promise<UserDetails | null> 
   };
 }
 
+export async function queryUsers(admin: boolean): Promise<UserDetails[]> {
+  const rows = await db.select().from(TABLE_USERS).where('admin', admin);
+  const users: UserDetails[] = [];
+
+  for (const row of rows) {
+    users.push({
+      passwordHash: row['password'],
+      username: row['username'],
+      firstName: row['firstName'],
+      lastName: row['lastName'],
+      email: row['email'],
+      admin: row['admin']
+    });
+  }
+
+  return users;
+}
+
 export async function saveUser(user: UserDetails) {
   if (await db.select('username').from(TABLE_USERS).where('username', user.username).first()) {
     return false;
@@ -139,6 +153,14 @@ export async function saveUser(user: UserDetails) {
   }).into(TABLE_USERS);
 
   return true;
+}
+
+export async function setAdmin(username: string, admin: boolean) {
+  return (
+    await db.update({ admin: admin })
+      .table(TABLE_USERS)
+      .where('username', username)
+  ) > 0;
 }
 
 export async function storeSession(token: string, username: string, expiration: Date) {

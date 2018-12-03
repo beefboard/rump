@@ -14,7 +14,7 @@ afterEach(() => {
   mockFs.restore();
 });
 
-describe('v1/images', () => {
+describe('backend v1/images', () => {
   describe('uploadImages', () => {
     it('should upload the given images to the images-api', async () => {
       const filePath = `${__dirname}/test.png`;
@@ -29,7 +29,7 @@ describe('v1/images', () => {
 
       let parsedBody: string = '';
       nock(images.IMAGES_API)
-        .put(`/v1/images/${postId}`, (body: any) => {
+        .put(`/v1/store/${postId}`, (body: any) => {
           parsedBody = body;
           return body;
         })
@@ -49,10 +49,8 @@ describe('v1/images', () => {
         [filePath]: 'content'
       });
 
-      let parsedBody = null;
       nock(images.IMAGES_API)
-        .put(`/v1/images/${postId}`, (body: any) => {
-          parsedBody = body;
+        .put(`/v1/store/${postId}`, (body: any) => {
           return body;
         })
         .reply(500, { error: 'Internal server error' });
@@ -95,7 +93,7 @@ describe('v1/images', () => {
     it('should send a delete request to the images-api for the postId', async () => {
       const postId = 'sdfsdf';
       nock(images.IMAGES_API)
-        .delete(`/v1/images/${postId}`)
+        .delete(`/v1/store/${postId}`)
         .reply(200, { success: true });
 
       await images.deleteImages(postId);
@@ -104,7 +102,7 @@ describe('v1/images', () => {
     it('should throw on an api error', async () => {
       const postId = 'sdfsdf';
       nock(images.IMAGES_API)
-        .delete(`/v1/images/${postId}`)
+        .delete(`/v1/store/${postId}`)
         .reply(500, { error: 'Internal server error' });
 
       let thrown = null;
@@ -120,7 +118,7 @@ describe('v1/images', () => {
     it("should not throw if images don't exist", async () => {
       const postId = 'sdfsdf';
       nock(images.IMAGES_API)
-        .delete(`/v1/images/${postId}`)
+        .delete(`/v1/store/${postId}`)
         .reply(404, { error: 'Not found' });
 
       let thrown = null;
@@ -148,7 +146,7 @@ describe('v1/images', () => {
       });
 
       nock(images.IMAGES_API)
-        .get(`/v1/images/${postId}/${imageId}`)
+        .get(`/v1/store/${postId}/${imageId}`)
         .reply(200, fs.createReadStream(responseFilePath));
 
       images.forwardRequest(postId, imageId, mockResponse as any);

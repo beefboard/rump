@@ -38,4 +38,18 @@ describe('db', () => {
       expect(await db.db.schema.hasTable(db.TABLE_SESSIONS)).toBe(true);
     });
   });
+
+  describe('generateIntialTables', async () => {
+    it('should not not generate tables if they already exist', async () => {
+      await db.initDb();
+      let thrown = null;
+      try {
+        await db.generateTables();
+      } catch (e) {
+        thrown = e;
+      }
+
+      expect(thrown).toBe(null);
+    });
+  });
 });

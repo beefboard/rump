@@ -1,10 +1,12 @@
 import { Router, Response } from 'express';
 import * as posts from '../../backend/v1/posts';
 import { guard, adminGuard } from '../../session';
-import { AuthSession } from '../../auth/db/db';
+import { AuthSession } from '../../auth/accounts';
 import multer from 'multer';
 import fs from 'fs';
+import mimeTypes from 'mime-types';
 import * as images from '../../backend/v1/images';
+import * as votes from '../../backend/v1/votes';
 
 const autoReap = require('multer-autoreap');
 
@@ -22,12 +24,18 @@ const MAX_FILE_SIZE = parseInt(process.env.MAX_IMG_SIZE || TEN_MB.toString(), 10
 const MAX_IMAGES = 5;
 
 const upload = multer({
-  dest: UPLOAD_DIR,
-  fileFilter: (_, file, next) => {
-    const type = file.mimetype;
-    const typeArray = type.split('/');
-    next(null, typeArray[0] === 'image');
+  fileFilter: (_, file, cb) => {
+    const extension = mimeTypes.extension(file.mimetype);
+    cb(null, extension !== false);
   },
+  storage: multer.diskStorage({
+    destination: UPLOAD_DIR,
+    filename: function (_, file, cb) {
+      const name = (Math.random()).toString(36).substring(7);
+      const extension = mimeTypes.extension(file.mimetype);
+      cb(null, `${name}-${Date.now()}.${extension}`);
+    }
+  }),
   limits: {
     fileSize: MAX_FILE_SIZE
   }
@@ -64,6 +72,15 @@ router.get('/', async (req, res) => {
   }
   try {
     const postsList = await posts.getPosts(query);
+    const postIds = postsList.map((post: any) => post.id);
+
+    if (postIds.length > 0) {
+      const postVotes = await votes.getGrades(postIds, req.session.username);
+
+      for (const post of postsList) {
+        post.votes = postVotes[post.id];
+      }
+    }
     res.send({ posts: postsList });
   } catch (e) {
     handleError(e, res);
@@ -73,8 +90,12 @@ router.get('/', async (req, res) => {
 router.get('/:postId', async (req, res) => {
   const postId = req.params.postId;
   const session = req.session;
+
   try {
-    const post = await posts.getPost(postId);
+    const [post, postVotes] = await Promise.all([
+      posts.getPost(postId),
+      votes.getGrade(postId, session.username)
+    ]);
     // Don't allow post to be seen if we are not admin
     // and it has not been approved
     if (!post || !session
@@ -82,7 +103,24 @@ router.get('/:postId', async (req, res) => {
           && post.author !== session.username)) {
       return res.status(404).send({ error: 'Not found' });
     }
+
+    post.votes = postVotes;
     res.send(post);
+  } catch (e) {
+    handleError(e, res);
+  }
+});
+
+router.post('/:postId/votes', guard, async (req, res) => {
+  const postId = req.params.postId;
+  const grade = req.body.grade;
+
+  try {
+    await votes.addGrade(postId, req.session.username, grade);
+
+    res.send({
+      success: true
+    });
   } catch (e) {
     handleError(e, res);
   }
@@ -150,7 +188,7 @@ router.post('/', guard, (req, res) => {
         if (imagePaths.length > 0) {
           await images.uploadImages(id, imagePaths);
         }
-        res.send({ success: true });
+        res.send({ id: id });
       } catch (e) {
         handleError(e, res);
       }

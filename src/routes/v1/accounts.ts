@@ -43,6 +43,21 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.get('/', async (req, res) => {
+  const type = req.query.type;
+
+  if (type !== 'admin') {
+    return res.status(422).send({ error: 'Invalid query given' });
+  }
+  try {
+    res.send({
+      accounts: await accounts.getAdmins()
+    });
+  } catch (e) {
+    handleError(e, res);
+  }
+});
+
 router.get('/:username', async (req, res) => {
   const username = req.params.username;
 

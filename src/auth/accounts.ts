@@ -21,6 +21,19 @@ export interface User {
   admin: boolean;
 }
 
+export interface AuthSession {
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  admin: boolean;
+  token: string;
+}
+
+export interface UsersQuery {
+  admin?: string | boolean;
+}
+
 /**
  * Login to the account, returning the auth token
  */
@@ -68,7 +81,7 @@ export async function register(details: RegisterDetails): Promise<boolean> {
   return await db.saveUser(user);
 }
 
-export async function getSession(token: string): Promise<db.AuthSession | null> {
+export async function getSession(token: string): Promise<AuthSession | null> {
   const session = await db.getSession(token);
 
   // If the session exists, and the session has not expiered extend the session
@@ -78,14 +91,19 @@ export async function getSession(token: string): Promise<db.AuthSession | null> 
         db.getDetails(session.username) as Promise<db.UserDetails>,
         db.storeSession(token, session.username, moment().add(2, 'weeks').toDate())
       ]);
+      if (details) {
+        return {
+          username: details.username.toLowerCase(),
+          firstName: details.firstName,
+          lastName: details.lastName,
+          admin: details.admin,
+          token: token,
+          email: details.email
+        };
+      }
+      await db.removeSession(token);
 
-      return {
-        username: details.username.toLowerCase(),
-        firstName: details.firstName,
-        lastName: details.lastName,
-        admin: details.admin,
-        token: token
-      };
+      return null;
     }
     await db.removeSession(token);
   }
@@ -108,6 +126,23 @@ export async function getUser(username: string) {
   } as User;
 }
 
+export async function getAdmins() {
+  const usersDetails = await db.queryUsers(true);
+
+  const users = [];
+  for (const details of usersDetails) {
+    users.push({
+      username: details.username,
+      firstName: details.firstName,
+      lastName: details.lastName,
+      email: details.email,
+      admin: details.admin
+    });
+  }
+
+  return users as User[];
+}
+
 export async function clearUsers() {
   await db.clearUsers();
   await db.generateInitialUsers();
@@ -115,6 +150,10 @@ export async function clearUsers() {
 
 export async function logout(token: string): Promise<boolean> {
   return await db.removeSession(token);
+}
+
+export async function setAdmin(username: string, admin: boolean) {
+  return await db.setAdmin(username.toLowerCase(), admin);
 }
 
 /**

@@ -119,8 +119,25 @@ describe('session', async () => {
 
     expect(session.username).toBe('admin');
   });
-});
 
+  it('should delete session if user no longer exists', async () => {
+    await accounts.register({
+      username: 'test2',
+      password: 'test2',
+      email: 'test@test.com',
+      firstName: 'test',
+      lastName: 'test'
+    });
+
+    const token = (await accounts.login('test2', 'test2')) as string;
+    console.log(token);
+    await accounts.clearUsers();
+
+    const details = await accounts.getSession(token);
+    expect(details).toBe(null);
+  });
+
+});
 describe('registration', () => {
   beforeEach(async () => {
     await accounts.clearUsers();
@@ -141,7 +158,7 @@ describe('registration', () => {
     expect(token.length).toBeGreaterThan(0);
   });
 
-  it('should expect unique usernames', async () => {
+  it('should accept unique usernames', async () => {
     expect.assertions(2);
     const user1 = {
       username: 'test2',
@@ -260,5 +277,65 @@ describe('retrieval', () => {
     expect.assertions(1);
 
     expect(await accounts.getUser('asdfasdf')).toBe(null);
+  });
+});
+
+describe('promotion', () => {
+  beforeEach(async () => {
+    await accounts.clearUsers();
+  });
+  it('should allow accounts to be promoted to admin', async () => {
+    const user = {
+      username: 'user1',
+      password: 'test2',
+      firstName: 'test5',
+      lastName: 'test6',
+      email: 'test3@test.com',
+    };
+    await accounts.register(user);
+    await accounts.setAdmin('user1', true);
+
+    const savedDetails = (await accounts.getUser('user1')) as any;
+    expect(savedDetails.admin).toBeTruthy();
+  });
+
+  it('should allow accounts to be demoted', async () => {
+    const user = {
+      username: 'user1',
+      password: 'test2',
+      firstName: 'test5',
+      lastName: 'test6',
+      email: 'test3@test.com',
+    };
+    await accounts.register(user);
+    await accounts.setAdmin('user1', true);
+    await accounts.setAdmin('user1', false);
+
+    const savedDetails = (await accounts.getUser('user1')) as any;
+    expect(savedDetails.admin).toBeFalsy();
+  });
+
+  it('should return false if the account does not exist', async () => {
+    expect(await accounts.setAdmin('user1', true)).toBe(false);
+  });
+});
+
+describe('query', () => {
+  it('should allow all admin accounts to be queried', async () => {
+    for (let i = 0; i < 10; i += 1) {
+      const user = {
+        username: `user${i}`,
+        password: 'test2',
+        firstName: 'test5',
+        lastName: 'test6',
+        email: 'test3@test.com',
+      };
+      await accounts.register(user);
+      if (i > 5) {
+        await accounts.setAdmin(user.username, true);
+      }
+    }
+
+    expect((await accounts.getAdmins()).length).toBe(5);
   });
 });

@@ -81,6 +81,45 @@ describe('/v1/accounts', () => {
     });
   });
 
+  describe('GET /', () => {
+
+    it('should return 422 when no query is given', async () => {
+      const response = await supertest(app).get('/v1/accounts');
+      expect(response.status).toBe(422);
+      expect(response.body).toEqual({ error: 'Invalid query given' });
+    });
+
+    it('should return a list of admins when admin type is given', async () => {
+      const mockAdminsResponse = [{
+        username: 'test',
+        email: 'test@test.com',
+        firstName: 'name',
+        lastName: 'last',
+        admin: true
+      }];
+
+      accounts.getAdmins.mockImplementation(() => {
+        return mockAdminsResponse;
+      });
+
+      const response = await supertest(app).get('/v1/accounts').query({ type: 'admin' });
+
+      expect(accounts.getAdmins).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ accounts: mockAdminsResponse });
+    });
+
+    it('should respond 500 on database error', async () => {
+      accounts.getAdmins.mockImplementation(() => {
+        throw new Error('Bad error');
+      });
+
+      const response = await supertest(app).get('/v1/accounts').query({ type: 'admin' });
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({ error: 'Internal server error' });
+    });
+  });
+
   describe('GET /:username', () => {
     it('should respond with userdetails of the given user', async () => {
       const mockuserResponse = {
