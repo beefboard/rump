@@ -21,7 +21,7 @@ const TEN_MB = 1024 * 1024 * 10;
 // Max file size is expected to be 10 MB, but
 // another custom size could also be used
 const MAX_FILE_SIZE = parseInt(process.env.MAX_IMG_SIZE || TEN_MB.toString(), 10);
-const MAX_IMAGES = 5;
+const MAX_IMAGES = parseInt(process.env.MAX_IMAGES || '5', 10); '';
 
 const upload = multer({
   fileFilter: (_, file, cb) => {
