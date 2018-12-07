@@ -46,8 +46,21 @@ will automattically use the node version required
 
 ### Linting
 
-Airbnb tslinting style is applied to snapstock, and is enforced via
-githooks. Builds will not succeed unless linting rules are conformed to.
+Airbnb tslinting style is applied to rump, and is enforced via
+git-hooks. Builds will not succeed unless linting rules are conformed to.
+
+I decided to use `airbnb-config-tslint` rules after reading their justifications in
+https://github.com/airbnb/javascript. I liked their stance on semi-colons, const/let, and 
+indentation. 
+
+I also think that airbnb rules have been developed and justified by
+a strong set of engineer's and I trust their judgement for how code should
+be formatted.
+
+Turned off rules:
+
+- object-literal-shorthand: Object shorthand is confusing
+- trailing-comma: also looks confusing
 
 ### Testing
 
